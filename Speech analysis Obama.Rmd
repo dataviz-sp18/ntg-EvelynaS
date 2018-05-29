@@ -1,0 +1,180 @@
+---
+title: "Obama's speech analysis"
+author: "Evelyn Sanchez"
+date: "5/28/2018"
+output: 
+  pdf_document:
+    fig_crop: false
+---
+
+#Text analysis of two speeches 
+In the following exercise, I analyzed two speeches of the former President Obama given in remarkably different contexts in order to identify the change in rhetoric. The speeches that I analyzed are: Obama's Presidential Farewell Address, delivered in Chicago on January 10th, 2017 and Address on Drones and Terrorism at the National Defense University, delivered in Washington, D.C. on  May 23rd, 2013, obtained as PDF documents at the American Rhetoric (https://www.americanrhetoric.com/) website.
+
+To present this information,  I fist used a wordcloud visualization which identifies the most used words during the speech. This visualization is easy to understand for any kind of public, since the larger the size of the word represent the words that appeared in the speech more frequently. Additionally, this visualization includes colors association with the frequency, so even when the public cannot distinguish the size the color difference can help to understand the difference in frequency.
+
+To make the difference in the use of words clearer, I later select the most popular words, compare their relation in a hierarchy cluster, that help to identify the combination of the words and their frequency.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, include=FALSE, echo=FALSE}
+#install.packages("slam", type = "binary")
+library(tm)
+library(wordcloud)
+```
+
+
+```{r pressure, include=FALSE, echo=FALSE, warning=FALSE}
+
+#source: http://www.cs.ukzn.ac.za/~murrellh/dm/content/slides10.pdf and #http://riccardo-hertel.com/wp/index.php/2015/09/03/using-r-to-create-a-word-cloud-from-a-pdf-document/
+
+set.seed(8)
+
+O_farewell <- readPDF(control=list(text="-layout"))(elem=list(uri="Obama_Farewell Address.pdf"), language="en")
+text_raw_farewell <- O_farewell$content
+
+#Clean the text
+text_corpus_f <- Corpus(VectorSource(text_raw_farewell))
+corpus_clean_f <- tm_map(text_corpus_f, stripWhitespace)
+corpus_clean_f <- tm_map(corpus_clean_f, removeNumbers)
+corpus_clean_f <- tm_map(corpus_clean_f, content_transformer(tolower))
+corpus_clean_f <- tm_map(corpus_clean_f, removeWords, stopwords("english"))
+
+#Omit words that are part of the pdf source and remove punctation
+my_stopwords <- c("americanrhetoric.com","certified","page","will","online","’s", "’ve") 
+corpus_clean_f <- tm_map(corpus_clean_f, removeWords, my_stopwords)
+corpus_clean_f <- tm_map(corpus_clean_f, removePunctuation)
+```
+
+## Obama's Presidential Farewell Address
+
+
+```{r, echo=FALSE, warning=FALSE}
+#Plot 
+layout(matrix(c(1, 2), nrow=2), heights=c(1, 4))
+par(mar=rep(0, 4))
+plot.new()
+text(x=0.5, y=0.5, "Obama's Presidential Farewell Address")
+wordcloud(corpus_clean_f, random.order=FALSE, scale= c(3, 0.1), colors=brewer.pal(8,"Dark2"), max.words=70, main="Title")
+
+```
+
+In the wordcloud we are able to see the 70 most popular word of the speech. On it, we can observe that the words used the most are, just and 's, following by democracy and then people, years and America. We can appreciate the tone of the speech is trying to give a review of what had been done in his period by looking at the smaller words, such as change, can, better, good, work, made, economic. In the same way, we encounter some other emotional words, such as faith, believe and spirit. 
+
+
+```{r, echo=FALSE, warning=FALSE}
+(tdm_f <- TermDocumentMatrix(corpus_clean_f))
+(tt_f <- findFreqTerms(tdm_f, lowfreq=10))
+ #clean irrelevant words
+tt_f <- tt_f[-c(6,7)]
+termFrequency <-
+rowSums(as.matrix(tdm_f[tt_f,]))
+barplot(termFrequency, main="Most used words", sub="Obama's Presidential Farewell Address",
+            xlab="Number of repetitions", cex.names=0.7, horiz=TRUE, las=2, col= "lightblue")
+
+```
+
+Even when with the wordcloud it is possible to appreciate the most popular words, for a deeper analysis it is helpful  to reduce the words to a smaller sample of word that are repeated at least 10 times. This filter give a sub sample of 13 words ('s and 've were omitted). The bar chart above helps to illustrate the difference in use of this top speech words, in which we can see that just reach 25 repetitions, followed by democracy and years.
+
+
+```{r, echo=FALSE, warning=FALSE}
+#find association with the word democracy
+asc_f<-findAssocs(tdm_f, terms = "democracy", corlimit = 0.8)
+asc_f
+```
+### Association with "democracy"
+
+Excluding "just", democracy is the most popular word, so to see how this word relates with other words in the speech, I check the number of words that are correlated by 80 %. We found an extensive list of words, that even when they are not used with high frequency are highly correlated, which can indicate a harmony in the tone of the speech in relation with the democracy word
+
+```{r, echo=FALSE, warning=FALSE}
+#Make a matrix of the text
+tdmat_f = as.matrix(tdm_f)
+
+tdmat_f <- as.matrix(removeSparseTerms(tdm_f, sparse=0.6))
+#
+distMatrix_f <- dist(scale(tdmat_f))
+hir_f <- hclust(distMatrix_f, method="ward.D2") 
+plot(hir_f,  main="Hierarchy cluster of words", sub="Obama's Presidential Farewell Address")
+
+```
+
+Finally, coming back to the sub sample of the most used words, I analyze the relation between the most popular 15 words ('s and 've included) through an hierarchy cluster of words, that cluster words in groups depending on their "distance", which can give us an idea how these words were used together in a sentence or in paragraphs.
+
+
+## Address on Drones and Terrorism at the National Defense University
+
+
+```{r, include=FALSE, echo=FALSE, warning=FALSE}
+
+
+O_terrorism <- readPDF(control=list(text="-layout"))(elem=list(uri="Obama_DronesTerrorism.pdf"), language="en")
+text_raw_terrorism <- O_terrorism$content
+
+#Clean the text
+text_corpus_t <- Corpus(VectorSource(text_raw_terrorism))
+corpus_clean_t <- tm_map(text_corpus_t, stripWhitespace)
+corpus_clean_t <- tm_map(corpus_clean_t, removeNumbers)
+corpus_clean_t <- tm_map(corpus_clean_t, content_transformer(tolower))
+corpus_clean_t <- tm_map(corpus_clean_t, removeWords, stopwords("english"))
+
+#Omit words that are part of the pdf source and remove punctation
+my_stopwords <- c("americanrhetoric.com","certified","page","will","online","’s", "’ve") 
+corpus_clean_t <- tm_map(corpus_clean_t, removeWords, my_stopwords)
+corpus_clean_t <- tm_map(corpus_clean_t, removePunctuation)
+```
+
+```{r, echo=FALSE, warning=FALSE}
+#Plot 
+layout(matrix(c(1, 2), nrow=2), heights=c(1, 4))
+par(mar=rep(0, 4))
+plot.new()
+text(x=0.5, y=0.5, "Obama's Address on Drones and Terrorism at the National Defense University")
+wordcloud(corpus_clean_t, random.order=FALSE, scale= c(3, 0.1), colors=brewer.pal(8,"Dark2"), max.words=70, main="Title")
+
+```
+For this second speech I found a very different set of words, with "war" as the most popular followed by "can", and later for a long list of words, such as law, states, America, united. This might indicate that the speech covers a broader set of primary topics compared with the other speech. 
+
+Later, I analyze the most repeated words. This time I used a threshold of over 13 repetitions, since the number of words used more than 10 times was too large. The bar chart below shows how the word "war" is used over 30 times, followed with can (27), Qaeda (24) and must (23). It is possible to observe a higher frequency of repetition than the other speech, as well the tone of the speech is more encouraging. One similarities between speeches is that the words "can", "people", "Americans" are one of most used words. 
+```{r, echo=FALSE, warning=FALSE}
+#make a list of the most used words (over 13 repetitions)
+(tdm_t <- TermDocumentMatrix(corpus_clean_t))
+(tt_t <- findFreqTerms(tdm_t, lowfreq=13))
+ #clean irrelevant words
+tt_t <- tt_t[-c(22,23)]
+termFrequency_t <-
+rowSums(as.matrix(tdm_t[tt_t,]))
+ #Plot the most used words
+
+barplot(termFrequency_t, main="Most used words", sub="Obama's Address on Drones and Terrorism at the National Defense University",
+  xlab="Number of repetitions", cex.names=0.7, horiz=TRUE, las=2, col= "red")
+```
+
+
+```{r, echo=FALSE, warning=FALSE}
+
+#Make a matrix of the text
+tdmat_t = as.matrix(tdm_t)
+
+#find association with the word democracy
+ass_ter<-findAssocs(tdm_t, terms = "democracy", corlimit = 0.6)
+ass_ter
+```
+### Association with "democracy"
+I test the correlation of the words in this speech with the word democracy, to have a comparative between both speeches. Here I reduce the correlation limit to 60% since there are not words associated at the 80% level. We can see that the set of words related with democracy are very different, and must is the most correlated one. 
+
+
+```{r, echo=FALSE, warning=FALSE}
+# remove sparse terms
+tdmat_t <- as.matrix(removeSparseTerms(tdm_t, sparse=0.6))
+# compute distances
+distMatrix_t <- dist(scale(tdmat_t))
+hir_t <- hclust(distMatrix_t, method="ward.D2") 
+plot(hir_t,  main="Hierarchy cluster of words", sub="Obama's Address on Drones and Terrorism at the National Defense University")
+
+
+
+```
+
+Finally, I tested the association of the most popular words, in order to see how they are jointly used in the speech, that can give a clearer way of how the speech used this words. In the first cluster, we can See how states and united are in the same clustered words, since they were used to make reference to the name of the country.
